@@ -5,6 +5,7 @@ import com.algaworks.algasensors.temperature.monitoring.domain.model.SensorId;
 import com.algaworks.algasensors.temperature.monitoring.domain.model.SensorMonitoring;
 import com.algaworks.algasensors.temperature.monitoring.domain.repository.SensorMonitoringRepository;
 import io.hypersistence.tsid.TSID;
+import java.time.Duration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/sensors/{sensorId}/monitoring")
@@ -47,6 +49,9 @@ public class SensorMonitoringController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public ResponseEntity<Void> enableSensor(@PathVariable TSID sensorId) {
     var sensorMonitoring = getMonitoring(sensorId);
+    if (sensorMonitoring.getEnabled()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sensor monitoring already enabled");
+    }
     sensorMonitoring.setEnabled(true);
     sensorMonitoringRepository.save(sensorMonitoring);
     return ResponseEntity.noContent().build();
@@ -54,8 +59,11 @@ public class SensorMonitoringController {
 
   @DeleteMapping("/enable")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public ResponseEntity<Void> disableSensor(@PathVariable TSID sensorId) {
+  public ResponseEntity<Void> disableSensor(@PathVariable TSID sensorId) throws InterruptedException {
     var sensorMonitoring = getMonitoring(sensorId);
+    if (!sensorMonitoring.getEnabled()) {
+      Thread.sleep(Duration.ofSeconds(10));
+    }
     sensorMonitoring.setEnabled(false);
     sensorMonitoringRepository.save(sensorMonitoring);
     return ResponseEntity.noContent().build();
