@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class TemperatureLogOutput {
+public class TemperatureLogDto {
     private UUID id;
     private TSID sensorId;
     private OffsetDateTime registeredAt;
