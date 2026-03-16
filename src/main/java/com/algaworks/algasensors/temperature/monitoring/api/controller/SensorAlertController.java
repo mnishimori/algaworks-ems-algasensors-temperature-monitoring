@@ -7,6 +7,7 @@ import com.algaworks.algasensors.temperature.monitoring.domain.model.SensorId;
 import com.algaworks.algasensors.temperature.monitoring.domain.repository.SensorAlertRepository;
 import io.hypersistence.tsid.TSID;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,22 +43,27 @@ public class SensorAlertController {
 
   @PutMapping
   public SensorAlertOutput createOrUpdate(@PathVariable TSID sensorId, @Valid @RequestBody SensorAlertInput input) {
-    SensorId sensorIdObj = new SensorId(sensorId);
-
-    SensorAlert sensorAlert = sensorAlertRepository.findById(sensorIdObj)
-        .orElse(SensorAlert.builder()
-            .id(sensorIdObj)
-            .build());
-
+    SensorAlert sensorAlert = findByIdOrDefault(sensorId);
     sensorAlert.setMaxTemperature(input.getMaxTemperature());
     sensorAlert.setMinTemperature(input.getMinTemperature());
-
-    sensorAlert = sensorAlertRepository.save(sensorAlert);
+    sensorAlert = sensorAlertRepository.saveAndFlush(sensorAlert);
 
     return SensorAlertOutput.builder()
         .id(sensorId)
         .maxTemperature(sensorAlert.getMaxTemperature())
         .minTemperature(sensorAlert.getMinTemperature())
+        .build();
+  }
+
+  private SensorAlert findByIdOrDefault(TSID sensorId) {
+    Optional<SensorAlert> sensorAlertOptional = sensorAlertRepository.findById(new SensorId(sensorId));
+    if (sensorAlertOptional.isPresent()) {
+      return sensorAlertOptional.get();
+    }
+    return SensorAlert.builder()
+        .id(new SensorId(sensorId))
+        .minTemperature(null)
+        .maxTemperature(null)
         .build();
   }
 
